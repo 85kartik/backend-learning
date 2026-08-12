@@ -1,68 +1,46 @@
-//const jwt = require("jsonwebtoken");
-const User = require("../modules/userModule");
-
 const JWT = require("jsonwebtoken");
 
-const requireSignIn = (req, res, next) => {
-  console.log("Authorization:", req.headers.authorization);
-
+const authMiddleware = (req, res, next) => {
   try {
+    // Get Authorization header
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      return res.status(401).json({
+      return res.status(401).send({
         success: false,
-        message: "Authorization header missing",
+        message: "Authorization token required",
       });
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    // Expected:
+    // Authorization: Bearer TOKEN
+    const token = authHeader.split(" ")[1];
 
-    const decoded = JWT.verify(token, process.env.JWT_CODE);
+    if (!token) {
+      return res.status(401).send({
+        success: false,
+        message: "Invalid authorization format",
+      });
+    }
 
+    // Verify JWT
+    const decoded = JWT.verify(
+      token,
+      process.env.JWT_CODE
+    );
+
+    // Store decoded user inside req.user
     req.user = decoded;
-
-    next();
-  } catch (error) {
-    console.log("JWT ERROR:", error.message);
-
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-    });
-  }
-};
-const isAdmin = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user._id);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    if (user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-    }
 
     next();
   } catch (error) {
     console.log(error);
 
-    return res.status(500).json({
+    return res.status(401).send({
       success: false,
-      message: "Admin Middleware Error",
-      error: error.message,
+      message: "Invalid or expired token",
     });
   }
 };
 
-module.exports = {
-  requireSignIn,
-  isAdmin,
-};
+module.exports = authMiddleware;

@@ -16,7 +16,16 @@ const userSchema = new mongoose.Schema({
 		type:String,
 		required:[true,"Enter password"],
 		minlength:6
+	},
+	phone:{
+		type:String,
+		required:[true,"Enter phone"],
+		max:10,
+	},
+	address:{
+		type:Array,
+		default:"",
 	}
-})
+},{timestamps:true})
 
 module.exports = mongoose.model("user",userSchema);
